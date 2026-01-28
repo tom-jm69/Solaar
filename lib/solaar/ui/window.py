@@ -150,6 +150,9 @@ def _create_device_panel():
 
     p.pack_start(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), False, False, 0)  # spacer
 
+    p._profile_buttons = _create_profile_buttons_box()
+    p.pack_start(p._profile_buttons, False, False, 0)
+
     p._config = config_panel.create()
     p.pack_end(p._config, True, True, 4)
 
@@ -207,6 +210,46 @@ def _create_buttons_box():
 
     bb._unpair = _new_button(_("Unpair"), "edit-delete", clicked=_unpair_current_device)
     bb.add(bb._unpair)
+
+    return bb
+
+
+def _create_profile_buttons_box():
+    """Create export/import/edit profile buttons for devices that support onboard profiles"""
+    bb = Gtk.HBox()
+    bb.set_spacing(6)
+    bb.set_margin_start(6)
+    bb.set_margin_end(6)
+    bb.set_margin_top(4)
+    bb.set_margin_bottom(4)
+
+    def _edit_profiles_clicked(trigger):
+        device = _find_selected_device()
+        if device:
+            action.edit_profiles(_window, device)
+
+    def _export_profiles_clicked(trigger):
+        device = _find_selected_device()
+        if device:
+            action.export_profiles(_window, device)
+
+    def _import_profiles_clicked(trigger):
+        device = _find_selected_device()
+        if device:
+            action.import_profiles(_window, device)
+
+    bb._edit = _new_button(_("Edit Profiles"), "document-edit", tooltip=_("Edit onboard profiles"), clicked=_edit_profiles_clicked)
+    bb.pack_start(bb._edit, False, False, 0)
+
+    bb._export = _new_button(
+        _("Export Profiles"), "document-save-as", tooltip=_("Export onboard profiles to file"), clicked=_export_profiles_clicked
+    )
+    bb.pack_start(bb._export, False, False, 0)
+
+    bb._import = _new_button(
+        _("Import Profiles"), "document-open", tooltip=_("Import onboard profiles from file"), clicked=_import_profiles_clicked
+    )
+    bb.pack_start(bb._import, False, False, 0)
 
     return bb
 
@@ -738,6 +781,14 @@ def _update_device_panel(device, panel, buttons, full=False):
             panel._lux.set_visible(True)
     else:
         panel._lux.set_visible(False)
+
+    if device.profiles is not None:
+        panel._profile_buttons.set_visible(True)
+        panel._profile_buttons._edit.set_sensitive(is_online)
+        panel._profile_buttons._export.set_sensitive(is_online)
+        panel._profile_buttons._import.set_sensitive(is_online)
+    else:
+        panel._profile_buttons.set_visible(False)
 
     buttons._pair.set_visible(False)
     buttons._unpair.set_sensitive(device.receiver.may_unpair if device.receiver else False)
